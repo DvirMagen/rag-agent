@@ -12,61 +12,175 @@ A plug & play RAG-based conversational AI agent with multi-user support. Each us
 | User A | nextjs@demo.com | demo1234 | Next.js Documentation |
 | User B | cooking@demo.com | demo1234 | Cooking Course |
 
-Log in with either account to see the agent answer from a completely different knowledge base.
+> You can log in directly on the live URL above — no setup required.
 
 ---
 
 ## Local Setup
 
-1. Clone the repo:
+### Prerequisites
+- Node.js 18+
+- A [Supabase](https://supabase.com) account (free tier works)
+- An [OpenAI](https://platform.openai.com) account with API access
+
+### Step 1 — Clone the repo
 ```bash
-   git clone https://github.com/DvirMagen/rag-agent.git
-   cd rag-agent
+git clone https://github.com/DvirMagen/rag-agent.git
+cd rag-agent
 ```
 
-2. Copy the env file and fill in your API keys:
-```bash
-   cp .env.example .env.local
+### Step 2 — Set up Supabase
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Go to **SQL Editor** and run the following schema:
+
+```sql
+create extension if not exists vector;
+
+create table documents (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  title text not null,
+  source_url text,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+create table chunks (
+  id uuid default gen_random_uuid() primary key,
+  document_id uuid references documents(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  content text not null,
+  embedding vector(1536),
+  chunk_index integer not null,
+  created_at timestamptz default now()
+);
+
+create table conversations (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  title text,
+  created_at timestamptz default now()
+);
+
+create table messages (
+  id uuid default gen_random_uuid() primary key,
+  conversation_id uuid references conversations(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  role text check (role in ('user', 'assistant')) not null,
+  content text not null,
+  sources jsonb,
+  created_at timestamptz default now()
+);
+
+create table agent_configs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null unique,
+  system_prompt text default 'You are a helpful assistant that answers questions based on the provided knowledge base.',
+  persona text default 'Assistant',
+  model text default 'gpt-4o-mini',
+  temperature numeric default 0.7,
+  retrieval_k integer default 5,
+  created_at timestamptz default now()
+);
+
+alter table documents enable row level security;
+alter table chunks enable row level security;
+alter table conversations enable row level security;
+alter table messages enable row level security;
+alter table agent_configs enable row level security;
+
+create policy "users see own documents" on documents for all using (auth.uid() = user_id);
+create policy "users see own chunks" on chunks for all using (auth.uid() = user_id);
+create policy "users see own conversations" on conversations for all using (auth.uid() = user_id);
+create policy "users see own messages" on messages for all using (auth.uid() = user_id);
+create policy "users see own config" on agent_configs for all using (auth.uid() = user_id);
+
+create index on chunks using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+
+create or replace function match_chunks(
+  query_embedding vector(1536),
+  match_user_id uuid,
+  match_count int default 5
+)
+returns table(
+  id uuid,
+  content text,
+  document_id uuid,
+  chunk_index int,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    chunks.id,
+    chunks.content,
+    chunks.document_id,
+    chunks.chunk_index,
+    1 - (chunks.embedding <=> query_embedding) as similarity
+  from chunks
+  where chunks.user_id = match_user_id
+  order by chunks.embedding <=> query_embedding
+  limit match_count;
+$$;
 ```
 
-3. Install and run:
+### Step 3 — Configure environment variables
 ```bash
-   npm install && npm run dev
+cp .env.example .env.local
 ```
 
-4. Seed the demo accounts and knowledge bases:
+Fill in your values in `.env.local`:
+- `NEXT_PUBLIC_SUPABASE_URL` — from Supabase project settings
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — from Supabase API keys
+- `SUPABASE_SECRET_KEY` — from Supabase API keys (secret key)
+- `SUPABASE_SERVICE_ROLE_KEY` — from Supabase API keys (legacy service_role)
+- `OPENAI_API_KEY` — from [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- `NEXT_PUBLIC_APP_URL` — `http://localhost:3000`
+- `SEED_SECRET` — any string you choose (e.g. `mysecret123`)
+
+### Step 4 — Install and run
 ```bash
-   curl -X POST http://localhost:3000/api/seed \
-     -H "Content-Type: application/json" \
-     -d '{"secret": "YOUR_SEED_SECRET"}'
+npm install && npm run dev
 ```
 
-5. Open http://localhost:3000 and log in with one of the demo accounts above.
+### Step 5 — Seed demo accounts
+```bash
+curl -X POST http://localhost:3000/api/seed \
+  -H "Content-Type: application/json" \
+  -d '{"secret": "YOUR_SEED_SECRET"}'
+```
+
+This creates two demo users with pre-loaded knowledge bases.
+
+### Step 6 — Open the app
+Go to [http://localhost:3000](http://localhost:3000) and log in with one of the demo accounts above.
 
 ---
 
 ## Architecture
+
 ┌─────────────────────────────────────────────────────┐
-│                   Next.js App Router                 │
-│                                                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
-│  │  Chat Widget  │  │ Admin Panel  │  │    Auth   │ │
-│  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘ │
-│         │                 │                 │        │
+│                   Next.js App Router                │
+│                                                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────── ──┐ │
+│  │  Chat Widget │  │ Admin Panel  │  │    Auth    │ │
+│  └──────┬───────┘  └──────┬───────┘  └───── ┬─────┘ │
+│         │                 │                 │       │
 │  ┌──────▼─────────────────▼─────────────────▼─────┐ │
-│  │              Route Handlers (API)               │ │
-│  │   /api/chat   /api/ingest   /api/documents      │ │
+│  │              Route Handlers (API)              │ │
+│  │   /api/chat   /api/ingest   /api/documents     │ │
 │  └──────┬──────────────┬──────────────────────────┘ │
 └─────────│──────────────│────────────────────────────┘
 │              │
 ┌───────▼──────┐  ┌───▼──────────────────────────┐
-│   OpenAI     │  │         Supabase              │
-│              │  │                               │
+│   OpenAI     │  │         Supabase             │
+│              │  │                              │
 │ gpt-4o-mini  │  │  ┌─────────┐  ┌───────────┐  │
 │ embedding    │  │  │  Auth   │  │ Postgres  │  │
 │ 3-small      │  │  └─────────┘  │ +pgvector │  │
 └──────────────┘  │               └───────────┘  │
 └───────────────────────────────┘
+
 
 **Stack:**
 - **Frontend:** Next.js 14 (App Router) + React + TypeScript
@@ -131,6 +245,26 @@ Ingestion runs in a Next.js Route Handler on Vercel's serverless functions. This
 
 ---
 
+## Evaluation Harness
+
+Run golden question evaluation to measure retrieval and answer quality:
+
+```bash
+# Test Next.js knowledge base
+curl -X POST https://rag-agent-five.vercel.app/api/eval \
+  -H "Content-Type: application/json" \
+  -d '{"secret": "YOUR_SEED_SECRET", "user_email": "nextjs@demo.com"}'
+
+# Test Cooking knowledge base
+curl -X POST https://rag-agent-five.vercel.app/api/eval \
+  -H "Content-Type: application/json" \
+  -d '{"secret": "YOUR_SEED_SECRET", "user_email": "cooking@demo.com"}'
+```
+
+Each question is scored by keyword presence in the answer. Results include per-question scores, retrieved sources, and an overall average score.
+
+---
+
 ## What I'd Do With Another Week
 
 - **Hybrid search:** Combine semantic search with keyword search (BM25) for better recall on exact terms
@@ -138,4 +272,3 @@ Ingestion runs in a Next.js Route Handler on Vercel's serverless functions. This
 - **URL ingestion:** Fetch and parse web pages directly from a URL in the admin panel
 - **Async ingestion:** Move to a background job queue for large documents
 - **Usage analytics:** Show query counts, popular questions, and retrieval quality metrics in the admin panel
-- **Evaluation harness:** Golden Q&A pairs to measure retrieval and answer quality automatically
