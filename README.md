@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RAG Agent
 
-## Getting Started
+A plug & play RAG-based conversational AI agent with multi-user support.
 
-First, run the development server:
+## Live Demo
+https://rag-agent-five.vercel.app
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Demo Accounts
+| User | Email | Password   | Knowledge Base                   |
+|------|-------|------------|----------------------------------|
+| User A | nextjs@demo.com  | demo1234 | Next.js Documentation |
+| User B | cooking@demo.com | demo1234 | Cooking Course        |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local Setup
+1. Clone the repo
+2. Copy `.env.example` to `.env.local` and fill in the values
+3. Run `npm install && npm run dev`
+4. Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
+See `.env.example` for all required variables.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Architecture
+- **Frontend:** Next.js 14 (App Router) + React + TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui
+- **Auth:** Supabase Auth
+- **Database:** Supabase Postgres + pgvector
+- **LLM:** OpenAI gpt-4o-mini
+- **Embeddings:** OpenAI text-embedding-3-small
 
-## Learn More
+## How RAG Works
+1. Documents are split into chunks (~500 tokens with overlap)
+2. Each chunk is embedded using OpenAI text-embedding-3-small
+3. Embeddings stored in Postgres with pgvector
+4. On each query, the question is embedded and matched against chunks using cosine similarity
+5. Top 5 chunks are injected into the system prompt as context
+6. GPT-4o-mini answers based only on the retrieved context
 
-To learn more about Next.js, take a look at the following resources:
+## Key Decisions
+- **pgvector over Pinecone:** Keeps everything in one service (Supabase), simpler setup
+- **RLS for isolation:** Row Level Security at DB level ensures users never see each other's data
+- **Streaming:** Native Next.js streaming for real-time responses
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## What I'd Do Next
+- Hybrid search (semantic + keyword BM25)
+- Reranking with Cohere
+- PDF/URL upload support
+- Conversation history persistence
+- Usage analytics in admin panel
