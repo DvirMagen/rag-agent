@@ -41,9 +41,9 @@ export default function DashboardLayout({
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-black flex items-center justify-center">
-                <span className="text-white font-bold text-sm">D</span>
+                <span className="text-white font-bold text-sm">R</span>
             </div>
-            <span className="font-semibold text-sm">Dossier</span>
+            <span className="font-semibold text-sm">Rag Agent</span>
           </div>
           <nav className="flex gap-1">
             <Link
