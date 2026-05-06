@@ -11,20 +11,29 @@ export async function POST(request: NextRequest) {
 
   if (!user) return new Response('Unauthorized', { status: 401 })
 
-  const { messages, conversationId } = await request.json()
-  const lastMessage = messages[messages.length - 1].content
-
-  const { data: config } = await supabase
-    .from('agent_configs')
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
-
-  const sources = await retrieveRelevantChunks(
-    lastMessage,
-    user.id,
-    config?.retrieval_k || 5
-  )
+    const { messages, conversationId } = await request.json()
+    const lastMessage = messages[messages.length - 1].content
+    
+    const { data: config } = await supabase
+      .from('agent_configs')
+      .select('*')
+      .eq('user_id', user.id)
+      .single()
+    
+    // Build contextual query combining recent conversation for better follow-up handling
+    const recentContext = messages
+      .slice(-4)
+      .map((m: any) => m.content)
+      .join(' ')
+    const queryForRetrieval = recentContext.length > lastMessage.length
+      ? recentContext
+      : lastMessage
+    
+    const sources = await retrieveRelevantChunks(
+      queryForRetrieval,
+      user.id,
+      config?.retrieval_k || 5
+    )
 
   const context = sources.length > 0
     ? sources.map((s, i) => `[${i + 1}] ${s.title}:\n${s.chunk_content}`).join('\n\n')
