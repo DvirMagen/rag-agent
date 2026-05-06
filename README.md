@@ -5,17 +5,42 @@ A plug & play RAG-based conversational AI agent with multi-user support.
 ## Live Demo
 https://rag-agent-five.vercel.app
 
-## Demo Accounts
+## Quick Start
+
+1. Clone the repo
+2. Copy `.env.example` to `.env.local` and fill in your API keys
+3. Run the app:
+   \```bash
+   npm install && npm run dev
+   \```
+4. Seed the demo accounts:
+   \```bash
+   curl -X POST http://localhost:3000/api/seed \
+     -H "Content-Type: application/json" \
+     -d '{"secret": "YOUR_SEED_SECRET"}'
+   \```
+5. Open http://localhost:3000 and log in with one of the demo accounts:
+
+# Demo Accounts
 | User   | Email            | Password   | Knowledge Base                   |
 |--------|------------------|------------|----------------------------------|
 | User A | nextjs@demo.com  | demo1234   | Next.js Documentation            |
 | User B | cooking@demo.com | demo1234   | Cooking Course                   |
 
-## Local Setup
-1. Clone the repo
-2. Copy `.env.example` to `.env.local` and fill in the values
-3. Run `npm install && npm run dev`
-4. Open http://localhost:3000
+## Knowledge Base Choice
+
+**User A — Next.js Documentation**
+I chose Next.js docs because it's directly relevant to the tech stack used in this project. 
+It demonstrates the RAG agent in a real developer context — someone could actually use this 
+to get quick answers while building with Next.js. It also showcases the system's ability to 
+handle technical, precise documentation where accuracy matters.
+
+**User B — Cooking Course**
+I chose a cooking course to demonstrate clear knowledge base isolation and contrast. 
+A completely different domain makes it immediately obvious when switching accounts that 
+the agent is truly isolated — if you ask "what is the App Router?" to the cooking agent, 
+it correctly says it doesn't know. This contrast is intentional and makes the multi-user 
+isolation easy to verify.
 
 ## Environment Variables
 See `.env.example` for all required variables.
@@ -47,3 +72,4 @@ See `.env.example` for all required variables.
 - PDF/URL upload support
 - Conversation history persistence
 - Usage analytics in admin panel
+

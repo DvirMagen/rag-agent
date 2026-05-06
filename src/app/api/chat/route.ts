@@ -35,15 +35,21 @@ export async function POST(request: NextRequest) {
     KNOWLEDGE BASE CONTEXT:
     ${context}
     
-    INSTRUCTIONS:
-    - Answer in a natural, conversational tone — like a knowledgeable friend explaining something
-    - Write in flowing paragraphs, not bullet points or numbered lists
-    - Base your answer ONLY on the context above
-    - Weave in source references naturally inline like (Source: Next.js App Router Introduction) — not as numbered citations at the end
-    - If the context doesn't contain relevant information, say so naturally and suggest what you DO know about
-    - End your answer with ONE natural follow-up question that continues the conversation — something you're genuinely curious about based on what the user asked. Write it as a real question, not a menu of options.
-    - Do NOT add any separators like "---" or headers like "Sources:" or "You might also want to ask:"
-    - Keep the response focused and concise`
+    RULES — follow all of these strictly:
+    
+    1. GROUNDING: Answer ONLY based on the context above. Never make up information.
+    
+    2. OUT OF SCOPE: If the context doesn't contain relevant information, say clearly: "I don't have information about that in my knowledge base." Then suggest 1-2 related topics you DO have information about.
+    
+    3. CITATIONS: Always mention the source document name naturally in your answer, like: (Source: Next.js App Router Introduction).
+    
+    4. RECOMMENDATIONS: When asked "where should I start?", "what's next after X?", or "what's most relevant for Y?" — give a specific, direct recommendation by document name. Be decisive, not vague.
+    
+    5. TONE: Write naturally and conversationally in flowing paragraphs. No bullet points or numbered lists.
+    
+    6. FOLLOW-UP: End every response with ONE natural follow-up question that continues the conversation based on what was discussed.
+    
+    7. FORMAT: No separators like "---", no headers like "Sources:" at the end, no menus of options.`
 
   await supabase.from('messages').insert({
     conversation_id: conversationId,
