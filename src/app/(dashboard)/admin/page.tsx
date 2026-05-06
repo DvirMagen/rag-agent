@@ -16,6 +16,7 @@ export default function AdminPage() {
   const [content, setContent] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [activeTab, setActiveTab] = useState<'upload' | 'documents' | 'settings'>('upload')
@@ -50,6 +51,34 @@ export default function AdminPage() {
         .single()
       setConfig(newConfig)
     }
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingFile(true)
+    setMessage(null)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      setMessage({ text: `"${file.name}" uploaded successfully! Created ${data.chunksCount} chunks.`, type: 'success' })
+      fetchDocuments()
+    } else {
+      setMessage({ text: data.error, type: 'error' })
+    }
+
+    setUploadingFile(false)
+    e.target.value = ''
   }
 
   const handleUpload = async () => {
@@ -98,7 +127,7 @@ export default function AdminPage() {
 
   const tabs = [
     { id: 'upload', label: 'Upload', icon: Plus },
-    { id: 'documents', label: `Documents`, icon: FileText, count: documents.length },
+    { id: 'documents', label: 'Documents', icon: FileText, count: documents.length },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
 
@@ -146,6 +175,34 @@ export default function AdminPage() {
       {/* Upload Tab */}
       {activeTab === 'upload' && (
         <div className="space-y-4">
+          {/* File Upload */}
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-muted/30">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Upload a file</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Supports PDF, TXT, and MD files</p>
+            </div>
+            <label className={`cursor-pointer ${uploadingFile ? 'opacity-50 pointer-events-none' : ''}`}>
+              <input
+                type="file"
+                accept=".pdf,.txt,.md"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                <Upload className="w-4 h-4" />
+                {uploadingFile ? 'Uploading...' : 'Choose file'}
+              </div>
+            </label>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">or paste text below</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Text Upload */}
           <div className="border border-dashed border-border rounded-xl p-6 space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Document title</label>
