@@ -6,10 +6,10 @@ A plug & play RAG-based conversational AI agent with multi-user support.
 https://rag-agent-five.vercel.app
 
 ## Demo Accounts
-| User | Email | Password   | Knowledge Base                   |
-|------|-------|------------|----------------------------------|
-| User A | nextjs@demo.com  | demo1234 | Next.js Documentation |
-| User B | cooking@demo.com | demo1234 | Cooking Course        |
+| User   | Email            | Password   | Knowledge Base                   |
+|--------|------------------|------------|----------------------------------|
+| User A | nextjs@demo.com  | demo1234   | Next.js Documentation            |
+| User B | cooking@demo.com | demo1234   | Cooking Course                   |
 
 ## Local Setup
 1. Clone the repo

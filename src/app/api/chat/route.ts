@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { retrieveRelevantChunks } from '@/lib/rag/retriever'
-import { openai } from '@ai-sdk/openai'
-import { streamText } from 'ai'
 import { NextRequest } from 'next/server'
+import OpenAI from 'openai'
 
 export const maxDuration = 30
 
@@ -38,9 +37,16 @@ ${context}
 
 INSTRUCTIONS:
 - Answer based ONLY on the context above
-- If the context doesn't contain relevant information, say "I don't have information about that in my knowledge base" and suggest related topics
-- Always cite your sources using [1], [2], etc.
-- Be concise and helpful`
+- If the context doesn't contain relevant information, say "I don't have information about that in my knowledge base" and suggest related topics you DO know about
+- Always cite your sources using [1], [2], etc. at the end of relevant sentences
+- Be concise and helpful
+- After your answer, always add a "---" separator followed by 3 short follow-up questions the user might want to ask, formatted exactly like this:
+
+---
+**You might also want to ask:**
+- [question 1]
+- [question 2]
+- [question 3]`
 
   await supabase.from('messages').insert({
     conversation_id: conversationId,
@@ -49,21 +55,50 @@ INSTRUCTIONS:
     content: lastMessage,
   })
 
-  const result = streamText({
-    model: openai(config?.model || 'gpt-4o-mini'),
-    system: systemPrompt,
-    messages: messages.slice(-10),
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+  const stream = await openai.chat.completions.create({
+    model: config?.model || 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...messages.slice(-10),
+    ],
     temperature: config?.temperature || 0.7,
-    onFinish: async ({ text }) => {
+    stream: true,
+  })
+
+  let fullContent = ''
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content || ''
+        fullContent += text
+        controller.enqueue(new TextEncoder().encode(text))
+      }
+
       await supabase.from('messages').insert({
         conversation_id: conversationId,
         user_id: user.id,
         role: 'assistant',
-        content: text,
+        content: fullContent,
         sources: sources,
       })
+
+      // Update conversation title from first message
+      if (messages.length === 1) {
+        const title = lastMessage.slice(0, 50) + (lastMessage.length > 50 ? '...' : '')
+        await supabase
+          .from('conversations')
+          .update({ title })
+          .eq('id', conversationId)
+      }
+
+      controller.close()
     },
   })
 
-  return result.toTextStreamResponse()
+  return new Response(readable, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  })
 }

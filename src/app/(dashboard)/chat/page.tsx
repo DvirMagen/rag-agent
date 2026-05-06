@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Send, Bot, User, Sparkles } from 'lucide-react'
+import { ChatSidebar } from '@/components/chat-sidebar'
 
 interface Message {
   id: string
@@ -21,22 +22,43 @@ export default function ChatPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    const createConversation = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('conversations')
-        .insert({ user_id: user.id, title: 'New conversation' })
-        .select()
-        .single()
-      if (data) setConversationId(data.id)
-    }
-    createConversation()
+    createNewConversation()
   }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  const createNewConversation = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('conversations')
+      .insert({ user_id: user.id, title: 'New conversation' })
+      .select()
+      .single()
+    if (data) {
+      setConversationId(data.id)
+      setMessages([])
+    }
+  }
+
+  const loadConversation = async (id: string) => {
+    setConversationId(id)
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', id)
+      .order('created_at', { ascending: true })
+
+    if (data) {
+      setMessages(data.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+      })))
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,103 +116,141 @@ export default function ChatPage() {
     }
   }
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-57px)] bg-background">
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                <Sparkles className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="text-2xl font-semibold mb-2">Ask your knowledge base</h2>
-              <p className="text-muted-foreground max-w-sm">
-                Ask any question and I'll answer based on your uploaded documents
-              </p>
-              <div className="grid grid-cols-1 gap-2 mt-8 w-full max-w-md">
-                {[
-                  'What are the main topics covered?',
-                  'Give me a summary of the key concepts',
-                  'Where should I start?',
-                ].map(suggestion => (
-                  <button
-                    key={suggestion}
-                    onClick={() => setInput(suggestion)}
-                    className="text-left px-4 py-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+  const renderMessage = (content: string) => {
+    const parts = content.split('---')
+    const mainContent = parts[0]
+    const followUp = parts[1]
 
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-1">
-                  <Bot className="w-4 h-4 text-primary-foreground" />
+    return (
+      <div className="space-y-3">
+        <p className="text-sm leading-relaxed whitespace-pre-wrap">{mainContent}</p>
+        {followUp && (
+          <div className="border-t pt-3 mt-3">
+            <div className="space-y-1.5">
+              {followUp.split('\n').filter(l => l.trim().startsWith('-')).map((line, i) => {
+                const question = line.replace(/^-\s*/, '').replace(/\[|\]/g, '').trim()
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setInput(question)}
+                    className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-background border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-muted-foreground hover:text-foreground"
+                  >
+                    {question}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-57px)]">
+      <ChatSidebar
+        currentConversationId={conversationId}
+        onSelectConversation={loadConversation}
+        onNewConversation={createNewConversation}
+      />
+
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                  <Sparkles className="w-8 h-8 text-primary" />
                 </div>
-              )}
+                <h2 className="text-2xl font-semibold mb-2">Ask your knowledge base</h2>
+                <p className="text-muted-foreground max-w-sm">
+                  Ask any question and I'll answer based on your uploaded documents
+                </p>
+                <div className="grid grid-cols-1 gap-2 mt-8 w-full max-w-md">
+                  {[
+                    'What are the main topics covered?',
+                    'Give me a summary of the key concepts',
+                    'Where should I start?',
+                  ].map(suggestion => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInput(suggestion)}
+                      className="text-left px-4 py-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((message) => (
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                key={message.id}
+                className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {message.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center flex-shrink-0 mt-1">
+                    <span className="text-white font-bold text-xs">R</span>
+                  </div>
+                )}
+                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground rounded-tr-sm'
                     : 'bg-muted rounded-tl-sm'
-                }`}
-              >
-                {message.content ? (
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                ) : (
-                  <div className="flex gap-1 py-1">
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                }`}>
+                  {message.content ? (
+                    message.role === 'assistant'
+                      ? renderMessage(message.content)
+                      : <p className="text-sm leading-relaxed">{message.content}</p>
+                  ) : (
+                    <div className="flex gap-1 py-1">
+                      <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  )}
+                </div>
+                {message.role === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="w-4 h-4" />
                   </div>
                 )}
               </div>
-              {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="w-4 h-4" />
-                </div>
-              )}
-            </div>
-          ))}
-          <div ref={bottomRef} />
-        </div>
-      </div>
-
-      <div className="border-t bg-gradient-to-t from-background via-background to-transparent p-4 pt-6">
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-          <div className="relative flex items-end gap-2 bg-muted/50 border border-border rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:bg-background transition-all shadow-sm">
-            <Textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="Ask a question about your knowledge base..."
-              className="flex-1 min-h-[24px] max-h-32 resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSubmit(e as any)
-                }
-              }}
-            />
-            <Button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              size="icon"
-              className="h-8 w-8 rounded-xl flex-shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </Button>
+            ))}
+            <div ref={bottomRef} />
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-2">
-            Press <kbd className="px-1 py-0.5 rounded bg-muted border text-xs">Enter</kbd> to send · <kbd className="px-1 py-0.5 rounded bg-muted border text-xs">Shift+Enter</kbd> for new line
-          </p>
-        </form>
+        </div>
+
+        <div className="border-t bg-background/80 backdrop-blur-sm p-4">
+          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+            <div className="relative flex items-end gap-2 bg-muted/50 border border-border rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:bg-background transition-all shadow-sm">
+              <Textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Ask a question about your knowledge base..."
+                className="flex-1 min-h-[24px] max-h-32 resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmit(e as any)
+                  }
+                }}
+              />
+              <Button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                size="icon"
+                className="h-8 w-8 rounded-xl flex-shrink-0 disabled:opacity-30 transition-all"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              Press <kbd className="px-1 py-0.5 rounded bg-muted border text-xs">Enter</kbd> to send · <kbd className="px-1 py-0.5 rounded bg-muted border text-xs">Shift+Enter</kbd> for new line
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   )
