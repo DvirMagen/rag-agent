@@ -19,7 +19,7 @@ export function ChatSidebar({ currentConversationId, onSelectConversation, onNew
   useEffect(() => {
     fetchConversations()
   }, [currentConversationId])
-  
+
   useEffect(() => {
     const interval = setInterval(fetchConversations, 3000)
     return () => clearInterval(interval)
@@ -28,10 +28,12 @@ export function ChatSidebar({ currentConversationId, onSelectConversation, onNew
   const fetchConversations = async () => {
     const { data } = await supabase
       .from('conversations')
-      .select('*')
+      .select('*, messages(count)')
       .order('created_at', { ascending: false })
       .limit(20)
-    if (data) setConversations(data)
+
+    const filtered = (data || []).filter((c: any) => c.messages[0].count > 0)
+    setConversations(filtered)
   }
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
