@@ -40,8 +40,8 @@ export default function DashboardLayout({
       <header className="border-b px-6 py-3 flex items-center justify-between bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Bot className="w-4 h-4 text-primary-foreground" />
+            <div className="w-7 h-7 rounded-lg bg-black flex items-center justify-center">
+                <span className="text-white font-bold text-sm">R</span>
             </div>
             <span className="font-semibold text-sm">RAG Agent</span>
           </div>
