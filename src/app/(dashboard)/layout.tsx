@@ -1,10 +1,11 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { Bot } from 'lucide-react'
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
 }) {
   const [email, setEmail] = useState('')
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
   useEffect(() => {
@@ -35,21 +37,45 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b px-6 py-3 flex items-center justify-between">
+      <header className="border-b px-6 py-3 flex items-center justify-between bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="flex items-center gap-6">
-          <h1 className="font-semibold">RAG Agent</h1>
-          <nav className="flex gap-4">
-            <Link href="/chat" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <Bot className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="font-semibold text-sm">RAG Agent</span>
+          </div>
+          <nav className="flex gap-1">
+            <Link
+              href="/chat"
+              className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                pathname === '/chat'
+                  ? 'bg-muted font-medium text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
               Chat
             </Link>
-            <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              href="/admin"
+              className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                pathname === '/admin'
+                  ? 'bg-muted font-medium text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
               Admin
             </Link>
           </nav>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">{email}</span>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+              <span className="text-xs font-medium">{email[0]?.toUpperCase()}</span>
+            </div>
+            <span className="text-sm text-muted-foreground hidden sm:block">{email}</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleSignOut} className="text-xs">
             Sign out
           </Button>
         </div>
