@@ -1,17 +1,37 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const [email, setEmail] = useState('')
+  const router = useRouter()
+  const supabase = createClient()
 
-  if (!user) redirect('/login')
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+      } else {
+        setEmail(user.email || '')
+      }
+    }
+    getUser()
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -28,10 +48,10 @@ export default async function DashboardLayout({
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">{user.email}</span>
-          <form action="/api/auth/logout" method="POST">
-            <Button variant="outline" size="sm" type="submit">Sign out</Button>
-          </form>
+          <span className="text-sm text-muted-foreground">{email}</span>
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            Sign out
+          </Button>
         </div>
       </header>
       <main className="flex-1 flex flex-col">{children}</main>
