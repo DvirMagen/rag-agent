@@ -43,7 +43,7 @@ export default function DashboardLayout({
             <div className="w-7 h-7 rounded-full bg-black flex items-center justify-center">
                 <span className="text-white font-bold text-sm">R</span>
             </div>
-            <span className="font-semibold text-sm">Rag Agent</span>
+            <span className="font-semibold text-base tracking-tight">RAG Agent</span>
           </div>
           <nav className="flex gap-1">
             <Link
