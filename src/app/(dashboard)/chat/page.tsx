@@ -148,7 +148,11 @@ export default function ChatPage() {
         {sources && sources.length > 0 && (
           <div className="border-t pt-3 space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground">Sources</p>
-            {sources.map((source, i) => (
+            {sources
+              .filter((source, index, self) =>
+                index === self.findIndex(s => s.title === source.title)
+              )
+              .map((source, i) => (
               <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="flex-shrink-0 w-4 h-4 rounded bg-muted flex items-center justify-center font-medium text-[10px]">
                   {i + 1}
