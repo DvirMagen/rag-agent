@@ -5,10 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, Upload, FileText, Settings } from 'lucide-react'
+import { Trash2, Upload, FileText, Settings, Plus, Link, CheckCircle2 } from 'lucide-react'
 import { Document, AgentConfig } from '@/types'
 
 export default function AdminPage() {
@@ -19,7 +17,8 @@ export default function AdminPage() {
   const [sourceUrl, setSourceUrl] = useState('')
   const [uploading, setUploading] = useState(false)
   const [savingConfig, setSavingConfig] = useState(false)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+  const [activeTab, setActiveTab] = useState<'upload' | 'documents' | 'settings'>('upload')
   const supabase = createClient()
 
   useEffect(() => {
@@ -36,13 +35,11 @@ export default function AdminPage() {
   const fetchConfig = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     const { data } = await supabase
       .from('agent_configs')
       .select('*')
       .eq('user_id', user.id)
       .single()
-
     if (data) {
       setConfig(data)
     } else {
@@ -58,7 +55,7 @@ export default function AdminPage() {
   const handleUpload = async () => {
     if (!title || !content) return
     setUploading(true)
-    setMessage('')
+    setMessage(null)
 
     const res = await fetch('/api/ingest', {
       method: 'POST',
@@ -69,13 +66,13 @@ export default function AdminPage() {
     const data = await res.json()
 
     if (res.ok) {
-      setMessage(`✅ Uploaded! Created ${data.chunksCount} chunks.`)
+      setMessage({ text: `Successfully created ${data.chunksCount} chunks`, type: 'success' })
       setTitle('')
       setContent('')
       setSourceUrl('')
       fetchDocuments()
     } else {
-      setMessage(`❌ Error: ${data.error}`)
+      setMessage({ text: data.error, type: 'error' })
     }
 
     setUploading(false)
@@ -93,162 +90,194 @@ export default function AdminPage() {
   const handleSaveConfig = async () => {
     if (!config) return
     setSavingConfig(true)
-
-    await supabase
-      .from('agent_configs')
-      .upsert({ ...config })
-
+    await supabase.from('agent_configs').upsert({ ...config })
     setSavingConfig(false)
-    setMessage('✅ Settings saved!')
-    setTimeout(() => setMessage(''), 3000)
+    setMessage({ text: 'Settings saved successfully', type: 'success' })
+    setTimeout(() => setMessage(null), 3000)
   }
 
+  const tabs = [
+    { id: 'upload', label: 'Upload', icon: Plus },
+    { id: 'documents', label: `Documents`, icon: FileText, count: documents.length },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ]
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="mb-8">
         <h1 className="text-2xl font-semibold">Admin Panel</h1>
-        <p className="text-muted-foreground">Manage your knowledge base and agent settings</p>
+        <p className="text-muted-foreground mt-1">Manage your knowledge base and agent settings</p>
       </div>
 
       {message && (
-        <div className="p-3 rounded-lg bg-muted text-sm">{message}</div>
+        <div className={`flex items-center gap-2 p-3 rounded-xl mb-6 text-sm ${
+          message.type === 'success'
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : 'bg-red-50 text-red-700 border border-red-200'
+        }`}>
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          {message.text}
+        </div>
       )}
 
-      <Tabs defaultValue="upload">
-        <TabsList>
-          <TabsTrigger value="upload">
-            <Upload className="w-4 h-4 mr-2" />
-            Upload
-          </TabsTrigger>
-          <TabsTrigger value="documents">
-            <FileText className="w-4 h-4 mr-2" />
-            Documents ({documents.length})
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-muted rounded-xl mb-6">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === tab.id
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            {tab.label}
+            {'count' in tab && (
+              <Badge variant="secondary" className="text-xs h-5 px-1.5">
+                {tab.count}
+              </Badge>
+            )}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="upload" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Document</CardTitle>
-              <CardDescription>Paste content to add to your knowledge base</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      {/* Upload Tab */}
+      {activeTab === 'upload' && (
+        <div className="space-y-4">
+          <div className="border border-dashed border-border rounded-xl p-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Document title</label>
               <Input
-                placeholder="Document title"
+                placeholder="e.g. Next.js App Router Guide"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block flex items-center gap-1">
+                <Link className="w-3.5 h-3.5" />
+                Source URL
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
               <Input
-                placeholder="Source URL (optional)"
+                placeholder="https://..."
                 value={sourceUrl}
                 onChange={e => setSourceUrl(e.target.value)}
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Content</label>
               <Textarea
                 placeholder="Paste document content here..."
                 value={content}
                 onChange={e => setContent(e.target.value)}
-                className="min-h-48"
+                className="min-h-48 resize-none"
               />
-              <Button onClick={handleUpload} disabled={uploading || !title || !content}>
-                {uploading ? 'Processing...' : 'Upload & Index'}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+            <Button
+              onClick={handleUpload}
+              disabled={uploading || !title || !content}
+              className="w-full"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {uploading ? 'Processing & indexing...' : 'Upload & Index'}
+            </Button>
+          </div>
+        </div>
+      )}
 
-        <TabsContent value="documents" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Knowledge Base</CardTitle>
-              <CardDescription>{documents.length} documents indexed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {documents.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No documents yet. Upload some content to get started.</p>
-              ) : (
-                <div className="space-y-3">
-                  {documents.map(doc => (
-                    <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{doc.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(doc.created_at).toLocaleDateString()}
-                          {doc.source_url && (
-                            <> · <a href={doc.source_url} target="_blank" className="underline">{doc.source_url}</a></>
-                          )}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(doc.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings" className="mt-4">
-          {config && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Agent Configuration</CardTitle>
-                <CardDescription>Customize how your agent behaves</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Persona name</label>
-                  <Input
-                    value={config.persona}
-                    onChange={e => setConfig({ ...config, persona: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">System prompt</label>
-                  <Textarea
-                    value={config.system_prompt}
-                    onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
-                    className="mt-1 min-h-32"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Model</label>
-                    <Input
-                      value={config.model}
-                      onChange={e => setConfig({ ...config, model: e.target.value })}
-                      className="mt-1"
-                    />
+      {/* Documents Tab */}
+      {activeTab === 'documents' && (
+        <div className="space-y-3">
+          {documents.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No documents yet</p>
+              <p className="text-xs mt-1">Upload content to get started</p>
+            </div>
+          ) : (
+            documents.map(doc => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between p-4 rounded-xl border border-border hover:border-border/80 hover:bg-muted/30 transition-all group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-primary" />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Results to retrieve (k)</label>
-                    <Input
-                      type="number"
-                      value={config.retrieval_k}
-                      onChange={e => setConfig({ ...config, retrieval_k: parseInt(e.target.value) })}
-                      className="mt-1"
-                    />
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{doc.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(doc.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                      {doc.source_url && (
+                        <> · <a href={doc.source_url} target="_blank" className="underline hover:text-foreground">{new URL(doc.source_url).hostname}</a></>
+                      )}
+                    </p>
                   </div>
                 </div>
-                <Button onClick={handleSaveConfig} disabled={savingConfig}>
-                  {savingConfig ? 'Saving...' : 'Save settings'}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(doc.id)}
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all w-8 h-8"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            ))
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
+
+      {/* Settings Tab */}
+      {activeTab === 'settings' && config && (
+        <div className="space-y-6">
+          <div className="border border-border rounded-xl p-6 space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Persona name</label>
+              <Input
+                value={config.persona}
+                onChange={e => setConfig({ ...config, persona: e.target.value })}
+                placeholder="e.g. Assistant"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">System prompt</label>
+              <Textarea
+                value={config.system_prompt}
+                onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
+                className="min-h-32 resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Model</label>
+                <Input
+                  value={config.model}
+                  onChange={e => setConfig({ ...config, model: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Results to retrieve (k)</label>
+                <Input
+                  type="number"
+                  value={config.retrieval_k}
+                  onChange={e => setConfig({ ...config, retrieval_k: parseInt(e.target.value) })}
+                />
+              </div>
+            </div>
+            <Button onClick={handleSaveConfig} disabled={savingConfig} className="w-full">
+              {savingConfig ? 'Saving...' : 'Save settings'}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
