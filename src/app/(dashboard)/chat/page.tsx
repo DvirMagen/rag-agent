@@ -163,32 +163,34 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div className="border-t bg-background/80 backdrop-blur-sm p-4">
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex gap-3 items-end">
-          <Textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="Ask a question about your knowledge base..."
-            className="min-h-[52px] max-h-32 resize-none rounded-xl"
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                handleSubmit(e as any)
-              }
-            }}
-          />
-          <Button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            size="icon"
-            className="h-[52px] w-[52px] rounded-xl flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+      <div className="border-t bg-gradient-to-t from-background via-background to-transparent p-4 pt-6">
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+          <div className="relative flex items-end gap-2 bg-muted/50 border border-border rounded-2xl px-4 py-3 focus-within:border-primary/50 focus-within:bg-background transition-all shadow-sm">
+            <Textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="Ask a question about your knowledge base..."
+              className="flex-1 min-h-[24px] max-h-32 resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSubmit(e as any)
+                }
+              }}
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              size="icon"
+              className="h-8 w-8 rounded-xl flex-shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <p className="text-center text-xs text-muted-foreground mt-2">
+            Press <kbd className="px-1 py-0.5 rounded bg-muted border text-xs">Enter</kbd> to send · <kbd className="px-1 py-0.5 rounded bg-muted border text-xs">Shift+Enter</kbd> for new line
+          </p>
         </form>
-        <p className="text-center text-xs text-muted-foreground mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
       </div>
     </div>
   )
