@@ -5,13 +5,6 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-// Polyfill for DOMMatrix which pdf-parse needs
-if (typeof globalThis.DOMMatrix === 'undefined') {
-  (globalThis as any).DOMMatrix = class DOMMatrix {
-    constructor() {}
-  }
-}
-
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -31,11 +24,11 @@ export async function POST(request: NextRequest) {
     content = await file.text()
   } else if (fileName.endsWith('.pdf')) {
     try {
+      const { extractText } = await import('unpdf')
       const arrayBuffer = await file.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      const pdf = require('pdf-parse')
-      const data = await pdf(buffer)
-      content = data.text
+      const buffer = new Uint8Array(arrayBuffer)
+      const { text } = await extractText(buffer, { mergePages: true })
+      content = text
     } catch (error: any) {
       return NextResponse.json({ error: `Failed to parse PDF: ${error.message}` }, { status: 400 })
     }
