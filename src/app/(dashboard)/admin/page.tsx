@@ -215,6 +215,8 @@ export default function AdminPage() {
                         day: 'numeric',
                         year: 'numeric',
                       })}
+                      {' · '}
+                      <span className="text-primary font-medium">{(doc as any).chunks?.[0]?.count || 0} chunks</span>
                       {doc.source_url && (
                         <> · <a href={doc.source_url} target="_blank" className="underline hover:text-foreground">{new URL(doc.source_url).hostname}</a></>
                       )}

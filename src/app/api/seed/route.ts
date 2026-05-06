@@ -67,7 +67,155 @@ Font Optimization: next/font will automatically optimize your fonts and remove e
 Script Optimization: The Next.js Script component extends the HTML script element and gives you control over when to load and execute scripts.
 
 Lazy Loading: Lazy loading in Next.js helps improve the initial loading performance of an application by decreasing the amount of JavaScript needed to render a route. It allows you to defer loading of Client Components and imported libraries.`
-  }
+  }, 
+  {
+    title: 'Next.js Middleware',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/routing/middleware',
+    content: `Middleware allows you to run code before a request is completed. Then, based on the incoming request, you can modify the response by rewriting, redirecting, modifying the request or response headers, or responding directly.
+
+Middleware runs before cached content and routes are matched. Use the file middleware.ts at the root of your project to define Middleware.
+
+Matching Paths: Middleware will be invoked for every route in your project by default. You can use the matcher config option to precisely target or exclude specific routes.
+
+The matcher allows you to filter Middleware to run on specific paths. You can match a single path, multiple paths, or use regex patterns.
+
+Common use cases for Middleware include authentication and authorization, server-side redirects, path rewriting, bot detection, logging, and feature flags.
+
+Middleware executes in the Edge Runtime by default, which means it runs close to the user for low latency. This makes it ideal for tasks that need to run on every request.`
+  },
+  {
+    title: 'Next.js Error Handling',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/routing/error-handling',
+    content: `The error.js file convention allows you to gracefully handle unexpected runtime errors in nested routes. It automatically wraps a route segment and its nested children in a React Error Boundary.
+
+Create error UI tailored to specific segments using the file-system hierarchy to adjust granularity. Error components must be Client Components.
+
+The error component receives the error object and a reset function. Calling reset attempts to recover from the error by re-rendering the error boundary's contents.
+
+Global errors: While less common, you can handle errors in the root layout using app/global-error.js. The global error UI must define its own html and body tags since it is replacing the root layout when active.
+
+Not Found: The notFound function allows you to render the not-found.js file within a route segment. This is useful for handling 404 errors gracefully in your application.`
+  },
+  {
+    title: 'Next.js Static and Dynamic Rendering',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/rendering',
+    content: `Next.js has two rendering environments: the client and the server. Rendering work can be split by route segments to enable streaming and partial rendering.
+
+Static Rendering (Default): Routes are rendered at build time, or in the background after data revalidation. The result is cached and can be pushed to a CDN. This optimization allows you to share the result of the rendering work between users and server requests.
+
+Dynamic Rendering: Routes are rendered for each user at request time. Dynamic rendering is useful when a route has data that is personalized to the user or has information that can only be known at request time, such as cookies or the URL's search params.
+
+Streaming: Streaming enables you to progressively render UI from the server. Work is split into chunks and streamed to the client as it becomes ready. This allows the user to see parts of the page immediately, before the entire content has finished rendering.
+
+React Suspense: You can use Suspense to show a loading state while streaming content. Wrap your component in a Suspense boundary with a fallback UI to show while the content is loading.`
+  },
+  {
+    title: 'Next.js Caching',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/caching',
+    content: `Next.js improves your application's performance and reduces costs by caching rendering work and data requests. By default, Next.js will cache as much as possible to improve performance and reduce cost.
+
+Request Memoization: React extends the fetch API to automatically memoize requests that have the same URL and options. This means you can call a fetch function for the same data in multiple places in a React component tree while only executing it once.
+
+Data Cache: Next.js has a built-in Data Cache that persists the results of data fetches across incoming server requests and deployments. This is possible because Next.js extends the native fetch API to allow each request on the server to set its own persistent caching semantics.
+
+Full Route Cache: Next.js automatically renders and caches routes at build time. This is an optimization that allows you to serve the cached route instead of rendering on the server for every request.
+
+Router Cache: Next.js has an in-memory client-side router cache that stores the React Server Component payload, split by individual route segments, for the duration of a user session.`
+  },
+  {
+    title: 'Next.js TypeScript Support',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/configuring/typescript',
+    content: `Next.js provides a TypeScript-first development experience for building your React application. It comes with built-in TypeScript support for automatically installing the necessary packages and configuring the proper settings.
+
+Next.js includes a custom TypeScript plugin and type checker which VSCode and other code editors can use for advanced type-checking and auto-completion.
+
+Statically typed links: Next.js can statically type links to prevent typos and other errors when using next/link. To opt into this feature, experimental.typedRoutes needs to be enabled.
+
+End-to-end type safety: The Next.js App Router has enhanced type safety. This includes type-safe fetch, type-safe route parameters, and type-safe search parameters.
+
+TypeScript configuration: Next.js supports both strict and non-strict TypeScript configurations. The tsconfig.json file in your project controls the TypeScript compiler options.`
+  },
+  {
+    title: 'Next.js Environment Variables',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/configuring/environment-variables',
+    content: `Next.js comes with built-in support for environment variables, which allows you to load environment variables from .env files and expose them to the browser.
+
+Loading Environment Variables: Next.js loads environment variables from .env.local into process.env automatically. Only variables prefixed with NEXT_PUBLIC_ are exposed to the browser.
+
+Environment variable files: .env loads in all environments, .env.local loads in all environments and is git ignored, .env.development loads only in development, .env.production loads only in production.
+
+Test Environment Variables: For testing environments, you can use .env.test which is loaded when the NODE_ENV is set to test.
+
+Exposing variables to the browser: By default, environment variables are only available in the Node.js environment. To expose a variable to the browser, prefix it with NEXT_PUBLIC_.
+
+Runtime configuration: For dynamic configuration that changes at runtime, you can use the runtime config feature or environment variables set at deployment time through your hosting provider.`
+  },
+  {
+    title: 'Next.js Metadata and SEO',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/optimizing/metadata',
+    content: `Next.js has a Metadata API that can be used to define your application metadata for improved SEO and web shareability.
+
+Static metadata: To define static metadata, export a Metadata object from a layout or page file. Next.js will automatically add the appropriate meta tags to the HTML head.
+
+Dynamic metadata: You can use the generateMetadata function to fetch metadata that requires dynamic values. This function receives the route params and parent metadata.
+
+File-based metadata: Next.js supports special files for metadata including favicon.ico, apple-icon.jpg, robots.txt, and sitemap.xml. These files are automatically used by Next.js.
+
+Open Graph: Next.js supports Open Graph metadata for social media sharing. You can define og:title, og:description, og:image and other Open Graph properties through the metadata object.
+
+Twitter Cards: Similar to Open Graph, Next.js supports Twitter Card metadata for rich previews on Twitter. Define twitter:card, twitter:title, twitter:description and twitter:image in your metadata.`
+  },
+  {
+    title: 'Next.js API Routes and Route Handlers',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/routing/route-handlers',
+    content: `Route Handlers allow you to create custom request handlers for a given route using the Web Request and Response APIs. Route Handlers are defined in a route.js or route.ts file inside the app directory.
+
+Supported HTTP Methods: Route Handlers support GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS HTTP methods.
+
+Caching: Route Handlers are not cached by default. You can opt into caching for GET methods by using the dynamic configuration option.
+
+Cookies: You can read and set cookies from Route Handlers using the cookies function from next/headers or through the Response object.
+
+Headers: You can read incoming request headers using the headers function from next/headers. You can also set response headers using the NextResponse object.
+
+Redirects: You can redirect from Route Handlers using the redirect function from next/navigation or by returning a Response with a 301 or 302 status code.
+
+Dynamic Route Segments: Route Handlers can use Dynamic Segments to create request handlers from dynamic data.`
+  },
+  {
+    title: 'Next.js Deployment and Production',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/deploying',
+    content: `Next.js can be deployed to any hosting provider that supports Node.js. The recommended deployment platform is Vercel, which is built by the Next.js team.
+
+Vercel deployment: Deploying to Vercel is zero-config for Next.js projects. Connect your GitHub repository and Vercel will automatically deploy your application on every push.
+
+Self-hosting: You can self-host Next.js on any server that supports Node.js. Run next build to create an optimized production build, then next start to start the production server.
+
+Static exports: Next.js allows you to export your app as a static HTML/CSS/JS bundle that can be deployed to any web server without Node.js.
+
+Docker: Next.js can be containerized using Docker. The Next.js repository includes a Dockerfile example for production deployments.
+
+Environment variables: Set environment variables in your hosting provider's dashboard for production. Never commit sensitive environment variables to your repository.
+
+Edge deployment: Next.js supports deploying to edge networks for improved performance. Middleware and Edge API Routes run on the edge runtime.`
+  },
+  {
+    title: 'Next.js Testing',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/testing',
+    content: `Next.js supports multiple testing frameworks including Vitest, Jest, Playwright, and Cypress. Each serves different testing needs.
+
+  Unit testing with Vitest: Vitest is a fast unit test framework with native ESM support. It works well with Next.js for testing utility functions, hooks, and components in isolation.
+
+  Unit testing with Jest: Jest is the most popular JavaScript testing framework. Next.js includes a Jest configuration that handles the App Router, including transforming Server Components.
+
+  End-to-end testing with Playwright: Playwright is an end-to-end testing framework that lets you test your Next.js app in real browsers including Chromium, Firefox, and WebKit.
+
+  End-to-end testing with Cypress: Cypress is another popular end-to-end testing framework with a visual test runner that makes debugging tests easy.
+
+  Testing Server Components: Server Components cannot be tested with traditional React testing utilities. You can test them by rendering them server-side and checking the HTML output.
+
+  Mocking: When testing components that use Next.js features like useRouter or useSearchParams, you'll need to mock these modules in your tests.`
+    },
 ]
 
 const COOKING_DOCS = [
@@ -143,7 +291,155 @@ Rolling pasta by hand requires a long rolling pin and patience. Roll from the ce
 Different pasta shapes suit different sauces. Thin pastas like angel hair suit light oil-based sauces. Ribbon pastas like tagliatelle suit meat ragù. Tube shapes like rigatoni hold chunky sauces in their ridges.
 
 Cooking fresh pasta takes only 2-3 minutes in well-salted boiling water. The water should taste like the sea. Reserve pasta water before draining as the starchy water helps emulsify and thicken sauces.`
-  }
+  }, 
+  {
+    title: 'Next.js Middleware',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/routing/middleware',
+    content: `Middleware allows you to run code before a request is completed. Then, based on the incoming request, you can modify the response by rewriting, redirecting, modifying the request or response headers, or responding directly.
+
+Middleware runs before cached content and routes are matched. Use the file middleware.ts at the root of your project to define Middleware.
+
+Matching Paths: Middleware will be invoked for every route in your project by default. You can use the matcher config option to precisely target or exclude specific routes.
+
+The matcher allows you to filter Middleware to run on specific paths. You can match a single path, multiple paths, or use regex patterns.
+
+Common use cases for Middleware include authentication and authorization, server-side redirects, path rewriting, bot detection, logging, and feature flags.
+
+Middleware executes in the Edge Runtime by default, which means it runs close to the user for low latency. This makes it ideal for tasks that need to run on every request.`
+  },
+  {
+    title: 'Next.js Error Handling',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/routing/error-handling',
+    content: `The error.js file convention allows you to gracefully handle unexpected runtime errors in nested routes. It automatically wraps a route segment and its nested children in a React Error Boundary.
+
+Create error UI tailored to specific segments using the file-system hierarchy to adjust granularity. Error components must be Client Components.
+
+The error component receives the error object and a reset function. Calling reset attempts to recover from the error by re-rendering the error boundary's contents.
+
+Global errors: While less common, you can handle errors in the root layout using app/global-error.js. The global error UI must define its own html and body tags since it is replacing the root layout when active.
+
+Not Found: The notFound function allows you to render the not-found.js file within a route segment. This is useful for handling 404 errors gracefully in your application.`
+  },
+  {
+    title: 'Next.js Static and Dynamic Rendering',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/rendering',
+    content: `Next.js has two rendering environments: the client and the server. Rendering work can be split by route segments to enable streaming and partial rendering.
+
+Static Rendering (Default): Routes are rendered at build time, or in the background after data revalidation. The result is cached and can be pushed to a CDN. This optimization allows you to share the result of the rendering work between users and server requests.
+
+Dynamic Rendering: Routes are rendered for each user at request time. Dynamic rendering is useful when a route has data that is personalized to the user or has information that can only be known at request time, such as cookies or the URL's search params.
+
+Streaming: Streaming enables you to progressively render UI from the server. Work is split into chunks and streamed to the client as it becomes ready. This allows the user to see parts of the page immediately, before the entire content has finished rendering.
+
+React Suspense: You can use Suspense to show a loading state while streaming content. Wrap your component in a Suspense boundary with a fallback UI to show while the content is loading.`
+  },
+  {
+    title: 'Next.js Caching',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/caching',
+    content: `Next.js improves your application's performance and reduces costs by caching rendering work and data requests. By default, Next.js will cache as much as possible to improve performance and reduce cost.
+
+Request Memoization: React extends the fetch API to automatically memoize requests that have the same URL and options. This means you can call a fetch function for the same data in multiple places in a React component tree while only executing it once.
+
+Data Cache: Next.js has a built-in Data Cache that persists the results of data fetches across incoming server requests and deployments. This is possible because Next.js extends the native fetch API to allow each request on the server to set its own persistent caching semantics.
+
+Full Route Cache: Next.js automatically renders and caches routes at build time. This is an optimization that allows you to serve the cached route instead of rendering on the server for every request.
+
+Router Cache: Next.js has an in-memory client-side router cache that stores the React Server Component payload, split by individual route segments, for the duration of a user session.`
+  },
+  {
+    title: 'Next.js TypeScript Support',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/configuring/typescript',
+    content: `Next.js provides a TypeScript-first development experience for building your React application. It comes with built-in TypeScript support for automatically installing the necessary packages and configuring the proper settings.
+
+Next.js includes a custom TypeScript plugin and type checker which VSCode and other code editors can use for advanced type-checking and auto-completion.
+
+Statically typed links: Next.js can statically type links to prevent typos and other errors when using next/link. To opt into this feature, experimental.typedRoutes needs to be enabled.
+
+End-to-end type safety: The Next.js App Router has enhanced type safety. This includes type-safe fetch, type-safe route parameters, and type-safe search parameters.
+
+TypeScript configuration: Next.js supports both strict and non-strict TypeScript configurations. The tsconfig.json file in your project controls the TypeScript compiler options.`
+  },
+  {
+    title: 'Next.js Environment Variables',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/configuring/environment-variables',
+    content: `Next.js comes with built-in support for environment variables, which allows you to load environment variables from .env files and expose them to the browser.
+
+Loading Environment Variables: Next.js loads environment variables from .env.local into process.env automatically. Only variables prefixed with NEXT_PUBLIC_ are exposed to the browser.
+
+Environment variable files: .env loads in all environments, .env.local loads in all environments and is git ignored, .env.development loads only in development, .env.production loads only in production.
+
+Test Environment Variables: For testing environments, you can use .env.test which is loaded when the NODE_ENV is set to test.
+
+Exposing variables to the browser: By default, environment variables are only available in the Node.js environment. To expose a variable to the browser, prefix it with NEXT_PUBLIC_.
+
+Runtime configuration: For dynamic configuration that changes at runtime, you can use the runtime config feature or environment variables set at deployment time through your hosting provider.`
+  },
+  {
+    title: 'Next.js Metadata and SEO',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/optimizing/metadata',
+    content: `Next.js has a Metadata API that can be used to define your application metadata for improved SEO and web shareability.
+
+Static metadata: To define static metadata, export a Metadata object from a layout or page file. Next.js will automatically add the appropriate meta tags to the HTML head.
+
+Dynamic metadata: You can use the generateMetadata function to fetch metadata that requires dynamic values. This function receives the route params and parent metadata.
+
+File-based metadata: Next.js supports special files for metadata including favicon.ico, apple-icon.jpg, robots.txt, and sitemap.xml. These files are automatically used by Next.js.
+
+Open Graph: Next.js supports Open Graph metadata for social media sharing. You can define og:title, og:description, og:image and other Open Graph properties through the metadata object.
+
+Twitter Cards: Similar to Open Graph, Next.js supports Twitter Card metadata for rich previews on Twitter. Define twitter:card, twitter:title, twitter:description and twitter:image in your metadata.`
+  },
+  {
+    title: 'Next.js API Routes and Route Handlers',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/routing/route-handlers',
+    content: `Route Handlers allow you to create custom request handlers for a given route using the Web Request and Response APIs. Route Handlers are defined in a route.js or route.ts file inside the app directory.
+
+Supported HTTP Methods: Route Handlers support GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS HTTP methods.
+
+Caching: Route Handlers are not cached by default. You can opt into caching for GET methods by using the dynamic configuration option.
+
+Cookies: You can read and set cookies from Route Handlers using the cookies function from next/headers or through the Response object.
+
+Headers: You can read incoming request headers using the headers function from next/headers. You can also set response headers using the NextResponse object.
+
+Redirects: You can redirect from Route Handlers using the redirect function from next/navigation or by returning a Response with a 301 or 302 status code.
+
+Dynamic Route Segments: Route Handlers can use Dynamic Segments to create request handlers from dynamic data.`
+  },
+  {
+    title: 'Next.js Deployment and Production',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/deploying',
+    content: `Next.js can be deployed to any hosting provider that supports Node.js. The recommended deployment platform is Vercel, which is built by the Next.js team.
+
+Vercel deployment: Deploying to Vercel is zero-config for Next.js projects. Connect your GitHub repository and Vercel will automatically deploy your application on every push.
+
+Self-hosting: You can self-host Next.js on any server that supports Node.js. Run next build to create an optimized production build, then next start to start the production server.
+
+Static exports: Next.js allows you to export your app as a static HTML/CSS/JS bundle that can be deployed to any web server without Node.js.
+
+Docker: Next.js can be containerized using Docker. The Next.js repository includes a Dockerfile example for production deployments.
+
+Environment variables: Set environment variables in your hosting provider's dashboard for production. Never commit sensitive environment variables to your repository.
+
+Edge deployment: Next.js supports deploying to edge networks for improved performance. Middleware and Edge API Routes run on the edge runtime.`
+  },
+  {
+    title: 'Next.js Testing',
+    source_url: 'https://nextjs.org/docs/app/building-your-application/testing',
+    content: `Next.js supports multiple testing frameworks including Vitest, Jest, Playwright, and Cypress. Each serves different testing needs.
+
+Unit testing with Vitest: Vitest is a fast unit test framework with native ESM support. It works well with Next.js for testing utility functions, hooks, and components in isolation.
+
+Unit testing with Jest: Jest is the most popular JavaScript testing framework. Next.js includes a Jest configuration that handles the App Router, including transforming Server Components.
+
+End-to-end testing with Playwright: Playwright is an end-to-end testing framework that lets you test your Next.js app in real browsers including Chromium, Firefox, and WebKit.
+
+End-to-end testing with Cypress: Cypress is another popular end-to-end testing framework with a visual test runner that makes debugging tests easy.
+
+Testing Server Components: Server Components cannot be tested with traditional React testing utilities. You can test them by rendering them server-side and checking the HTML output.
+
+Mocking: When testing components that use Next.js features like useRouter or useSearchParams, you'll need to mock these modules in your tests.`
+  },
 ]
 
 export async function POST(request: Request) {

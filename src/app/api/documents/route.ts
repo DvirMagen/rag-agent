@@ -9,7 +9,7 @@ export async function GET() {
 
   const { data: documents } = await supabase
     .from('documents')
-    .select('id, title, source_url, created_at')
+    .select('id, title, source_url, created_at, chunks(count)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
