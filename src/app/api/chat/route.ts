@@ -30,23 +30,20 @@ export async function POST(request: NextRequest) {
     ? sources.map((s, i) => `[${i + 1}] ${s.title}:\n${s.chunk_content}`).join('\n\n')
     : 'No relevant information found in the knowledge base.'
 
-  const systemPrompt = `${config?.system_prompt || 'You are a helpful assistant.'}
+    const systemPrompt = `${config?.system_prompt || 'You are a helpful assistant.'}
 
-KNOWLEDGE BASE CONTEXT:
-${context}
-
-INSTRUCTIONS:
-- Answer based ONLY on the context above
-- If the context doesn't contain relevant information, say "I don't have information about that in my knowledge base" and suggest related topics you DO know about
-- Always cite your sources using [1], [2], etc. at the end of relevant sentences
-- Be concise and helpful
-- After your answer, always add a "---" separator followed by 3 short follow-up questions the user might want to ask, formatted exactly like this:
-
----
-**You might also want to ask:**
-- [question 1]
-- [question 2]
-- [question 3]`
+    KNOWLEDGE BASE CONTEXT:
+    ${context}
+    
+    INSTRUCTIONS:
+    - Answer in a natural, conversational tone — like a knowledgeable friend explaining something
+    - Write in flowing paragraphs, not bullet points or numbered lists
+    - Base your answer ONLY on the context above
+    - Weave in source references naturally inline like (Source: Next.js App Router Introduction) — not as numbered citations at the end
+    - If the context doesn't contain relevant information, say so naturally and suggest what you DO know about
+    - End your answer with ONE natural follow-up question that continues the conversation — something you're genuinely curious about based on what the user asked. Write it as a real question, not a menu of options.
+    - Do NOT add any separators like "---" or headers like "Sources:" or "You might also want to ask:"
+    - Keep the response focused and concise`
 
   await supabase.from('messages').insert({
     conversation_id: conversationId,
