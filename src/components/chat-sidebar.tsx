@@ -19,6 +19,11 @@ export function ChatSidebar({ currentConversationId, onSelectConversation, onNew
   useEffect(() => {
     fetchConversations()
   }, [currentConversationId])
+  
+  useEffect(() => {
+    const interval = setInterval(fetchConversations, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   const fetchConversations = async () => {
     const { data } = await supabase

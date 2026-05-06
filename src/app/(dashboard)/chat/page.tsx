@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Bot, User, Sparkles } from 'lucide-react'
+import { Send, User, Sparkles } from 'lucide-react'
 import { ChatSidebar } from '@/components/chat-sidebar'
 
 interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  sources?: any[]
 }
 
 export default function ChatPage() {
@@ -56,6 +57,7 @@ export default function ChatPage() {
         id: m.id,
         role: m.role,
         content: m.content,
+        sources: m.sources,
       })))
     }
   }
@@ -109,6 +111,24 @@ export default function ChatPage() {
           )
         )
       }
+
+      // Load sources after stream ends
+      const { data: savedMsg } = await supabase
+        .from('messages')
+        .select('sources')
+        .eq('conversation_id', conversationId)
+        .eq('role', 'assistant')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (savedMsg) {
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === assistantMessage.id ? { ...m, sources: savedMsg.sources } : m
+          )
+        )
+      }
     } catch (error) {
       console.error(error)
     } finally {
@@ -116,7 +136,7 @@ export default function ChatPage() {
     }
   }
 
-  const renderMessage = (content: string) => {
+  const renderMessage = (content: string, sources?: any[]) => {
     const parts = content.split('---')
     const mainContent = parts[0]
     const followUp = parts[1]
@@ -124,22 +144,41 @@ export default function ChatPage() {
     return (
       <div className="space-y-3">
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{mainContent}</p>
+
+        {sources && sources.length > 0 && (
+          <div className="border-t pt-3 space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Sources</p>
+            {sources.map((source, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="flex-shrink-0 w-4 h-4 rounded bg-muted flex items-center justify-center font-medium text-[10px]">
+                  {i + 1}
+                </span>
+                {source.source_url ? (
+                  <a href={source.source_url} target="_blank" className="underline hover:text-foreground truncate">
+                    {source.title}
+                  </a>
+                ) : (
+                  <span className="truncate">{source.title}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {followUp && (
-          <div className="border-t pt-3 mt-3">
-            <div className="space-y-1.5">
-              {followUp.split('\n').filter(l => l.trim().startsWith('-')).map((line, i) => {
-                const question = line.replace(/^-\s*/, '').replace(/\[|\]/g, '').trim()
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setInput(question)}
-                    className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-background border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-muted-foreground hover:text-foreground"
-                  >
-                    {question}
-                  </button>
-                )
-              })}
-            </div>
+          <div className="border-t pt-3 space-y-1.5">
+            {followUp.split('\n').filter((l: string) => l.trim().startsWith('-')).map((line: string, i: number) => {
+              const question = line.replace(/^-\s*/, '').replace(/\[|\]/g, '').trim()
+              return (
+                <button
+                  key={i}
+                  onClick={() => setInput(question)}
+                  className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-background border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-muted-foreground hover:text-foreground"
+                >
+                  {question}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
@@ -201,7 +240,7 @@ export default function ChatPage() {
                 }`}>
                   {message.content ? (
                     message.role === 'assistant'
-                      ? renderMessage(message.content)
+                      ? renderMessage(message.content, message.sources)
                       : <p className="text-sm leading-relaxed">{message.content}</p>
                   ) : (
                     <div className="flex gap-1 py-1">
